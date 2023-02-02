@@ -1,34 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
-  )
+import React, { useState } from 'react';
+import { format, startOfMonth, endOfMonth, startOfWeek, addDays, subMonths, addMonths } from 'date-fns';
+import '../src/App.scss';
+interface CalendarProps {
+    date: Date;
 }
 
-export default App
+const Calendar: React.FC<CalendarProps> = ({ date }) => {
+    const [currentDate, setCurrentDate] = useState(date);
+
+    const startOfMonthDate = startOfMonth(currentDate);
+    const endOfMonthDate = endOfMonth(currentDate);
+
+    const month = format(currentDate, 'MMMM yyyy');
+    const weekdays = Array.from({ length: 7 });
+    const days = Array.from({ length: endOfMonthDate.getDate() });
+
+    const handlePreviousMonth = () => {
+        setCurrentDate(subMonths(currentDate, 1));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentDate(addMonths(currentDate, 1));
+    };
+
+    return (
+        <div className="calendar">
+            <div className="calendar-header">
+                <div className="month-name">
+                    <button onClick={handlePreviousMonth}>{"<"}</button>
+                    {month}
+                    <button onClick={handleNextMonth}>{">"}</button>
+                </div>
+            </div>
+            <div className="calendar-weekdays">
+                {weekdays.map((weekday) => (
+                    <div className="weekday">
+                    </div>
+                ))}
+            </div>
+            <div className="calendar-days">
+                {days.map((day) => (
+                    <div className="day">
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default Calendar;
