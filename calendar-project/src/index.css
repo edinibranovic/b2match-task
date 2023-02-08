@@ -1,7 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities{
+}
+.year-scrollbar::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.year-scrollbar::-webkit-scrollbar-track {
+  border-radius: 100vh;
+}
+
+.year-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 100vh;
+}
+
+.year-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+.scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  border-radius: 100vh;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 100vh;
+}
+
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  display: flex;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -12,6 +57,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+  height: 100%;
 }
 
 a {
@@ -29,6 +75,7 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  width: auto;
 }
 
 h1 {
