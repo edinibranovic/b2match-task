@@ -1,18 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities{
-  /* Chrome, Safari and Opera */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .no-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
-  }
+}
+.year-scrollbar::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
 }
 
+.year-scrollbar::-webkit-scrollbar-track {
+  border-radius: 100vh;
+}
+
+.year-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 100vh;
+}
+
+.year-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+.scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
 .scrollbar::-webkit-scrollbar {
+  display: none;
   width: 4px;
   height: 4px;
 }

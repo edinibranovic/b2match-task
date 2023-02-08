@@ -18,11 +18,13 @@ import { useNavigate } from "react-router-dom";
 //Initialized object that will be used for copying and manipulating values of certain properties fetched with RapidAPI.
 type Event = {
   title: string;
-  description: string;
+  dateOfEvent: Date;
+  timeOfEvent: string;
 };
 
-//Access token for RapidAPI - a free public api that I chose for this project.
+//Access token for RapidAPI - a free public api that I chose for this project. Very unsafe like this, but that's okay for this project.
 const token = "a918ea7b11msh149491656dcbb2cp173575jsnc7093e1c73d2";
+
 const Calendar: React.FC = () => {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -64,12 +66,17 @@ const Calendar: React.FC = () => {
   );
 
   /*
-  Fetching time data with RapidAPI and saving certain attributes in the Event objects, so they can later be shown in the calendar.
+  Fetching time data with RapidAPI and saving certain attributes in the Event objects,
+  so they can later be shown in the calendar.
+  NOTICE -----> The calendar I used has a couple of instances where it stores events for the wrong year
+  (year 2021 instead of 2022 etc.). So just bear in mind there wasn't anything I could do with that
+  except use a different group of events, but I discovered this issue too late to implement such a change before the deadline.
+  Next time I will pay more attention to the quality of data I find online :) ...
   */
   useEffect(() => {
     const copyEvents: Event[] = [];
     fetch(
-      `https://public-holiday.p.rapidapi.com/${currentDate.getFullYear()}/US`, //${currentDate.getFullYear()}
+      `https://public-holiday.p.rapidapi.com/${currentDate.getFullYear()}/US`,
       {
         method: "GET",
         headers: {
@@ -80,26 +87,30 @@ const Calendar: React.FC = () => {
     )
       .then((response) => response.json())
       .then((response) => {
-        console.log(response);
+        for (const obj of response) {
+          copyEvents.push({
+            title: obj.name,
+            dateOfEvent: new Date(obj.date),
+            timeOfEvent: obj.date, //This can be a time interval, but since I am working with holidays it will be same as dateOfEvent
+          });
+        }
       })
-      /*response.forEach((obj: Object) => {
-            copyEvents.push({title: obj.localName; description: obj.date;});
-          })*/
-      .catch((err) => console.error(err));
-    /*.then(() => {
+      .then(() => {
         setFetchedEvents(copyEvents);
-      });*/
-  }, []);
+        console.log(fetchedEvents);
+      })
+      .catch((err) => console.error(err));
+  }, [getYear(currentDate)]);
 
-  /*
+  /*a
   Changes the URL postfix to show the current date in YYYY-DD-MM format.
-  ------------------------------------------------BUG------------------------------------------------
-    The URL value is always one step behind, I wasn't able to find the solution in time,
-    but I left the code to show my progress and because it doesn't affect other functionalities...
-  ------------------------------------------------BUG------------------------------------------------
+  ----------------------------------------------------------BUG----------------------------------------------------------
+    The URL value doesn't change on page refresh. I wasn't able to find the solution in time,
+    but I left the code to show my progress and because, as far as I'm aware, it doesn't affect other functionalities...
+  ----------------------------------------------------------BUG----------------------------------------------------------
   */
-  const changeURL = () => {
-    let dateString = currentDate
+  const changeURL = (currDate: Date) => {
+    let dateString = currDate
       .toLocaleDateString("en-US", {
         year: "numeric",
         day: "2-digit",
@@ -117,17 +128,18 @@ const Calendar: React.FC = () => {
   /*
   Every time 'days' changes, the order of dates shown in the calendar is recalculated.
   This way we make sure we see all the days in a month, as well as its surrounding days if they're needed
-  to fill the calendar page (5 rows with 7 columns going from Monday to Sunday)
+  to fill the calendar page from Monday to Sunday.
   */
   const allDays: Array<Array<Date>> = useMemo(() => {
-    const chunkSize = 7;
-
     const chunks = [];
+    const chunkSize: number = 7;
     let numbers: Array<Date> = [];
     let lastDayOfPreviousMonth: Date = endOfMonth(subMonths(currentDate, 1));
     let firstDayOfNextMonth: Date = startOfMonth(addMonths(currentDate, 1));
     let daysInPreviousMonth: number = startOfMonth(currentDate).getDay() - 1;
     let daysInNextMonth: number = 7 - endOfMonth(currentDate).getDay();
+    let loopCount: number =
+      daysInPreviousMonth > 4 && daysInNextMonth < 7 ? 42 : 35;
 
     for (let i = 0; i < daysInPreviousMonth; i++) {
       numbers.push(subDays(lastDayOfPreviousMonth, i));
@@ -136,11 +148,11 @@ const Calendar: React.FC = () => {
     numbers.reverse();
     days.forEach((day) => numbers.push(day));
 
-    for (let i = 0; i < daysInNextMonth; i++) {
+    for (let i = 0; i < chunkSize; i++) {
       numbers.push(addDays(firstDayOfNextMonth, i));
     }
 
-    for (let i = 0; i < 35; i += chunkSize) {
+    for (let i = 0; i < loopCount; i += chunkSize) {
       chunks.push(numbers.slice(i, i + chunkSize));
     }
 
@@ -171,8 +183,9 @@ const Calendar: React.FC = () => {
   Show the previous month when the '<' button is clicked.
   */
   const previousMonth = () => {
-    setCurrentDate(startOfMonth(subMonths(currentDate, 1)));
-    changeURL();
+    let parsedCurrentDate: Date = startOfMonth(subMonths(currentDate, 1));
+    setCurrentDate(parsedCurrentDate);
+    changeURL(parsedCurrentDate);
     if (showYearList) toggleYearList();
     if (showMonthList) toggleMonthList();
   };
@@ -181,8 +194,9 @@ const Calendar: React.FC = () => {
   Show the next month when the '>' button is clicked.
   */
   const nextMonth = () => {
-    setCurrentDate(startOfMonth(addMonths(currentDate, 1)));
-    changeURL();
+    let parsedCurrentDate: Date = startOfMonth(addMonths(currentDate, 1));
+    setCurrentDate(parsedCurrentDate);
+    changeURL(parsedCurrentDate);
     if (showYearList) toggleYearList();
     if (showMonthList) toggleMonthList();
   };
@@ -196,14 +210,13 @@ const Calendar: React.FC = () => {
   When a month from the list of months is clicked, currentDate updates its value and the list closes.
   */
   const onMonthClick = (month: number) => {
-    setCurrentDate(
-      parse(
-        `${months[month]} 1 ${getYear(currentDate)}`,
-        "MMMM d yyyy",
-        new Date()
-      )
+    let parsedCurrentDate = parse(
+      `${months[month]} 1 ${getYear(currentDate)}`,
+      "MMMM d yyyy",
+      new Date()
     );
-    changeURL();
+    setCurrentDate(parsedCurrentDate);
+    changeURL(parsedCurrentDate);
     setShowMonthList(false);
   };
 
@@ -217,16 +230,15 @@ const Calendar: React.FC = () => {
   YearFormat changes based on the digit count of the NEW year value.
   */
   const onYearClick = (year: number) => {
-    let digitCount: number = year.toString().length;
+    let digitCount: number = years[year].toString().length;
     setYearFormat("MMMM d " + "y".repeat(digitCount));
-    setCurrentDate(
-      parse(
-        `${months[getMonth(currentDate)]} 1 ${years[year]}`,
-        "MMMM d yyyy",
-        new Date()
-      )
+    let parsedCurrentDate = parse(
+      `${months[getMonth(currentDate)]} 1 ${years[year]}`,
+      "MMMM d yyyy",
+      new Date()
     );
-    changeURL();
+    setCurrentDate(parsedCurrentDate);
+    changeURL(parsedCurrentDate);
     setShowYearList(false);
   };
 
@@ -236,13 +248,13 @@ const Calendar: React.FC = () => {
   const onDayClick = (day: Date) => {
     if (getMonth(day) === getMonth(currentDate)) {
       setCurrentDate(day);
-      changeURL();
+      changeURL(day);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen from-green-50 via-green-100 to-green-500 bg-gradient-to-br">
-      <div className="h-full w-3/4 p-6 bg-white rounded-2xl shadow-xl flex flex-col">
+      <div className="h-full w-3/4 p-6 bg-white rounded-2xl shadow-xl flex flex-col mb-4">
         <div className="flex justify-center pb-4">
           <button
             className="text-green-600 bg-white bg-white hover:text-teal-500 focus:outline-none"
@@ -291,35 +303,39 @@ const Calendar: React.FC = () => {
                     {dayGroup.map((day, index) => {
                       return (
                         <div
-                          className="px-1 w-[30px] md:w-[56px] flex grow  flex-row-reverse border hover:border-green-500 text-green-500 cursor-pointer"
+                          className="w-[30px] md:w-[56px] flex grow  flex-row-reverse border hover:border-green-500 text-green-500 cursor-pointer"
                           key={day.toString()}
                           onClick={() => onDayClick(day)}
                         >
-                          <div className="sticky top-0 right-0 ml-1 text-green-600">
+                          <div className="sticky top-0 right-0 text-green-600 pr-1">
                             {day.getDate()}
                           </div>
-                          <div className="scrollbar overflow-y-hidden hover:overflow-y-scroll h-full">
-                            <div className="rounded mb-4 ">
-                              <p className="text-xs truncate">
-                                event 2 blabla
-                                <br />
-                                12:00 - 15:00
-                              </p>
-                            </div>
-                            <div className="rounded mb-4 ">
-                              <p className="text-xs truncate">
-                                event 2 blabla
-                                <br />
-                                12:00 - 15:00
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs truncate">
-                                event 2 blabla
-                                <br />
-                                15:00 - 16:00
-                              </p>
-                            </div>
+                          <div className="scrollbar overflow-y-hidden hover:overflow-y-scroll h-full w-full mx-1">
+                            {fetchedEvents.map((e) => {
+                              if (
+                                getMonth(e.dateOfEvent) === getMonth(day) &&
+                                getDate(e.dateOfEvent) === getDate(day)
+                              ) {
+                                return (
+                                  <div className="rounded my-4 ">
+                                    <p className="flex flex-wrap rounded bg-violet-200 w-fit max-w-full text-xs text-green-700 p-1 hover:text-teal-600 hover:bg-violet-300">
+                                      {e.title}
+                                      <br />
+                                      {e.timeOfEvent}
+                                    </p>
+                                  </div>
+                                );
+                              }
+                            })}
+                            {/*There aren't a lot of events to show in the calendar,
+                            so you can add these example events if you want to see how the calendar would display them*/
+                            /*<div className="rounded my-4 ">
+                                <p className="flex flex-wrap rounded bg-violet-200 w-fit max-w-full text-xs text-green-500 p-1 hover:text-teal-600 hover:bg-violet-300">
+                                  Example event
+                                  <br />
+                                  Example date
+                                </p>
+                              </div>*/}
                           </div>
                         </div>
                       );
@@ -346,7 +362,7 @@ const Calendar: React.FC = () => {
           </div>
         )}
         {showYearList && (
-          <div className="flex flex-col text-lg text-center text-green-600 scrollbar overflow-y-scroll h-full pl-8">
+          <div className="flex flex-col text-lg text-center text-green-600 year-scrollbar overflow-y-scroll h-full pl-8">
             <ul>
               {years.map((year, index) => (
                 <li
